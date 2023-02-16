@@ -295,7 +295,6 @@ class AutoRepositioningScrollViewWidget extends StatefulWidget {
 class _AutoRepositioningScrollViewWidgetState
     extends State<AutoRepositioningScrollViewWidget>
     with WidgetsBindingObserver {
-
   /// Used to know when to re-position the [scrollController].
   Orientation? _currentOrientation;
 
