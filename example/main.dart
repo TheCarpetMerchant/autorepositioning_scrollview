@@ -25,7 +25,9 @@ class _MyAppState extends State<MyApp> {
       initialIndex: 5,
       initialAlignment: 0.5,
       triggerInitialGoToCurrentData: true,
-      onPositionUpdated: () => print('Position changed'),
+      onPositionUpdated: () {
+        // currentIndex and currentAlignment have been updated.
+      },
     );
   }
 
@@ -35,9 +37,9 @@ class _MyAppState extends State<MyApp> {
       controller: autoRepositioningController,
       child: Column(
         children: [
-          for (int i = 0; i < 20; i++)
-            const Text(
-                '''Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'''),
+          for (int i = 0; i < 50; i++)
+            Text(
+                '''$i Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'''),
         ],
       ),
     );

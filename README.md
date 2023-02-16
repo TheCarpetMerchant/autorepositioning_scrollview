@@ -10,4 +10,3 @@ If such a widget is Text, it will snap to the line in order to fully show the co
 - Blacklist/whitelist widgets from being considered by the automatic repositioning.
 - Manually go to a certain position.
 - Manually go to a certain instance of text in the widget tree.
-- 

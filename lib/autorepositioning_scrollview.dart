@@ -21,6 +21,7 @@ class AutoRepositioningScrollViewController {
     this.onPositionUpdated,
     this.triggerInitialGoToCurrentData = false,
     this.debounceDuration = const Duration(milliseconds: 300),
+    this.additionalPixelsToLineHeightRepositioning = -1,
   }) {
     _scrollViewKey = GlobalKey();
     currentIndex = initialIndex ?? currentIndex;
@@ -48,15 +49,13 @@ class AutoRepositioningScrollViewController {
   /// Time to wait before registering a new position after the last scroll event.
   final Duration debounceDuration;
 
-  /// Used to know when to re-position the [scrollController].
-  Orientation? _currentOrientation;
-
   /// Keys of widgets that should be ignored by the positioning calculations.
   /// Typically used to ignored top or bottom widgets (ie a subtitle could not exist).
   /// Passing null as a value will lead to only widgets with a key being calculated on.
   final List<Key> ignoredKeys;
 
-  /// If not null, [ignoredKeys] is ignored and only children of [onlyChildrenOf] will be calculated on.
+  /// If not null, [ignoredKeys] is ignored and only children of [onlyChildrenOf]
+  /// will be calculated on.
   final Key? onlyChildrenOf;
 
   /// Called when [currentIndex] and [currentAlignment] are updated.
@@ -64,6 +63,11 @@ class AutoRepositioningScrollViewController {
 
   /// If true, [goToCurrentData] will be called after the first frame is drawn.
   final bool triggerInitialGoToCurrentData;
+
+  /// When snapping to a line, add this amount of pixels to prevent
+  /// the top of the text from being exactly on the edge of the viewport.
+  /// Defaults to -1.
+  final double additionalPixelsToLineHeightRepositioning;
 
   /// When a scroll is triggered by [goToCurrentData], a scroll event is raised.
   /// We should ignore this call to prevent useless calculations (and potential incorrect values).
@@ -92,12 +96,11 @@ class AutoRepositioningScrollViewController {
       _ignoreNextScroll = false;
       return;
     }
-    _setCurrentData();
-    onPositionUpdated?.call();
+    setCurrentData();
   }
 
   /// Analysis the current element tree to extract [currentIndex] and [currentAlignment].
-  void _setCurrentData() {
+  void setCurrentData() {
     if (!scrollController.hasClients) return;
     if (_scrollViewKey.currentContext == null) return;
     _visit();
@@ -118,6 +121,7 @@ class AutoRepositioningScrollViewController {
       currentAlignment = pixelsAlong / _datas[currentIndex].size;
     }
     _datas.clear();
+    onPositionUpdated?.call();
   }
 
   /// Positions the [scrollController] according to [currentIndex] and [currentAlignment].
@@ -157,6 +161,8 @@ class AutoRepositioningScrollViewController {
             }
           }
         }
+
+        goingTo += additionalPixelsToLineHeightRepositioning;
       }
     }
     _ignoreNextScroll = true;
@@ -289,6 +295,10 @@ class AutoRepositioningScrollViewWidget extends StatefulWidget {
 class _AutoRepositioningScrollViewWidgetState
     extends State<AutoRepositioningScrollViewWidget>
     with WidgetsBindingObserver {
+
+  /// Used to know when to re-position the [scrollController].
+  Orientation? _currentOrientation;
+
   @override
   void initState() {
     super.initState();
@@ -309,20 +319,17 @@ class _AutoRepositioningScrollViewWidgetState
             ? Orientation.landscape
             : Orientation.portrait;
 
-    // Changing orientation calls didChangeMetrics twice, once before and once after.
-    // Since Flutter rebuilds in between, prevent the update of the memorized variables.
-    if (widget.controller._currentOrientation == newOrientation) {
-      // Memorise current position right away.
-      widget.controller._setCurrentData();
-      return;
+    if (_currentOrientation == newOrientation) {
+      // Memorise the current position right away.
+      widget.controller.setCurrentData();
+    } else {
+      _currentOrientation = newOrientation;
+
+      // Repositioning at the next frame
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        widget.controller.goToCurrentData();
+      });
     }
-
-    // Save new values
-    widget.controller._currentOrientation = newOrientation;
-
-    // Repositioning at the next frame
-    SchedulerBinding.instance
-        .addPostFrameCallback((_) => widget.controller.goToCurrentData());
   }
 
   @override
@@ -407,7 +414,8 @@ class _BuildContextFinder {
 /// Shorthand for [BuildContext] utilities.
 extension _BuildContextUtilities on BuildContext {
   bool get hasChildren => _BuildContextFinder(this).hasChildren;
-  bool get hasMultipleChildren => _BuildContextFinder(this).numberOfChildren > 1;
+  bool get hasMultipleChildren =>
+      _BuildContextFinder(this).numberOfChildren > 1;
   BuildContext? findByKey(Key key) =>
       _BuildContextFinder(this, key).foundElement;
   BuildContext? get parent => _BuildContextFinder(this).parent;
